@@ -35,9 +35,20 @@ def update_distance_matrix(matrix, cluster_i, cluster_j, labels):
 def upgma(distance_matrix):
     clusters = [[i] for i in range(len(distance_matrix))]
     labels = [chr(ord('A') + i) for i in range(len(distance_matrix))]  # A, B, C, ...
-
+    print("Clusters: ",clusters)
+    print("labels:" ,labels)
+    print(" --------- Initial_Distance_Matrix --------- ")
+    print(distance_matrix)
+    print(" -------------------------------- ")
     while len(clusters) > 1:
         i, j, min_distance = find_min_distance(distance_matrix)
+
+        # Print merging information only if both i and j are within valid indices
+        if 0 <= i < len(labels) and 0 <= j < len(labels):
+            print(f"Merged clusters {labels[i]} and {labels[j]} with distance {min_distance}. New cluster: {labels[i] + labels[j]}")
+            
+        else:
+            print(f"One of the clusters is out of index. Merging not performed.")
 
         # Update the cluster list and distance matrix
         clusters[i].extend(clusters[j])
@@ -49,15 +60,13 @@ def upgma(distance_matrix):
         i = min(i, j)
         j = max(i, j)
 
-        # Print merging information only if both i and j are within valid indices
-        if 0 <= i < len(labels) and 0 <= j < len(labels):
-            print(f"Merged clusters {labels[i]} and {labels[j]} with distance {min_distance}. New cluster: {labels[i]}")
-        else:
-            print(f"One of the clusters is out of index. Merging not performed.")
+        
 
         print("Cluster List:", clusters)
+        print("New Labels",labels)
         print("Distance Matrix:")
         print(distance_matrix)
+        print("--------------------------------")
         print()
 
     return labels[0]
