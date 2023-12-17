@@ -1,4 +1,6 @@
-def generate_profile_matrix(sequences):
+# ----------------------------------- [ Profile Matrix ] ------------------------------------
+
+def Profile_Matrix(sequences):
     if not sequences:
         print("Sequences Are Empty Fam")
 
@@ -14,7 +16,7 @@ def generate_profile_matrix(sequences):
     for i in range(seq_length):
         column = [seq[i] for seq in sequences]
         for nucleotide in "ACGT-":
-            frequency = column.count(nucleotide) / len(column)
+            frequency = column.count(nucleotide) / len(column)  # 1/3 for example
             profile_matrix[nucleotide][i] = round(frequency, 2)  # Round to 2 decimal place
 
     return profile_matrix
@@ -40,17 +42,17 @@ def calculate_score(nucleotide_j, position):
         if nucleotide == nucleotide_j:
             # Set the weight based on the nucleotide type
             if nucleotide_j == '-':
-                w = MGap
+                weight = MGap
             else:
-                w = MNuc
+                weight = MNuc
         elif nucleotide == '-' or nucleotide_j == '-':
-            w = gap_penalty
+            weight = gap_penalty
         elif is_transition(nucleotide, nucleotide_j):
-            w = MMs
+            weight = MMs
         else:
-            w = MMv
+            weight = MMv
         # Calculate the score for the current nucleotide and position
-        score += frequencies[position] * w
+        score += frequencies[position] * weight
 
     return score
 
@@ -125,7 +127,7 @@ T = "ACG"
 # ------------ [ Profile Matrix ] ------------
 
 print("Profile Matrix:")
-profile_matrix = generate_profile_matrix(aligned_sequences)
+profile_matrix = Profile_Matrix(aligned_sequences)
 # Print the profile matrix
 for nucleotide, frequencies in profile_matrix.items():
     print(f"{nucleotide}: {frequencies}")
