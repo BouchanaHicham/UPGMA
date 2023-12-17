@@ -1,105 +1,140 @@
-import numpy as np
+def generate_profile_matrix(sequences):
+    if not sequences:
+        print("Sequences Are Empty Fam")
 
-def build_profile_matrix(sequences):
-    symbols = set(''.join(sequences))
-    profile_matrix = {symbol: [0] * len(sequences[0]) for symbol in symbols}
+    # Check that all sequences have the same length
+    seq_length = len(sequences[0])
+    if not all(len(seq) == seq_length for seq in sequences):
+        print("Sequences Do Not Have The Same Length so they are not aligned")
 
-    for seq in sequences:
-        for i, symbol in enumerate(seq):
-            profile_matrix[symbol][i] += 1
+    # Initialize profile matrix with zeros
+    profile_matrix = {nucleotide: [0] * seq_length for nucleotide in "ACGT-"}
+
+    # Update profile matrix based on aligned sequences
+    for i in range(seq_length):
+        column = [seq[i] for seq in sequences]
+        for nucleotide in "ACGT-":
+            frequency = column.count(nucleotide) / len(column)
+            profile_matrix[nucleotide][i] = round(frequency, 2)  # Round to 2 decimal place
 
     return profile_matrix
 
-def align_sequences_with_profile(template, profile_matrix, sequences, match_prob, gap_prob, gap_extension_prob):
-    aligned_sequences = []
+# ----------------------------------- [ Check If Tansition ] ------------------------------------
+def is_transition(nucleotide1, nucleotide2):
+    purines = {'A', 'G'}
+    pyrimidines = {'C', 'T'}
+    return (nucleotide1 in purines and nucleotide2 in purines) or (nucleotide1 in pyrimidines and nucleotide2 in pyrimidines)
+    # This will return True if Transition
 
-    for seq in sequences:
-        alignment = []
+# ------------------------------------ [ Score Matrix ] ------------------------------------
 
-        for i in range(len(template)):
-            nucleotide_template = template[i]
-            nucleotide_seq = seq[i]
+def calculate_score(nucleotide_j, position):
+    MNuc = 2
+    MGap = 1
+    MMs = 1
+    MMv = -1
+    gap_penalty = -3
+    score = 0
 
-            prob_match = profile_matrix[nucleotide_template][i] * profile_matrix[nucleotide_seq][i]
-            prob_gap = gap_prob * gap_extension_prob
-
-            if prob_match * match_prob >= prob_gap:
-                alignment.append(nucleotide_template)
+    for nucleotide, frequencies in profile_matrix.items():
+        if nucleotide == nucleotide_j:
+            # Set the weight based on the nucleotide type
+            if nucleotide_j == '-':
+                w = MGap
             else:
-                alignment.append('-')
+                w = MNuc
+        elif nucleotide == '-' or nucleotide_j == '-':
+            w = gap_penalty
+        elif is_transition(nucleotide, nucleotide_j):
+            w = MMs
+        else:
+            w = MMv
+        # Calculate the score for the current nucleotide and position
+        score += frequencies[position] * w
 
-        aligned_sequences.append(''.join(alignment))
+    return score
 
-    return aligned_sequences
+# ------------------------------------ [ Align Sequences ] ------------------------------------
 
-def dynamic_programming_alignment(template, profile_matrix, sequences, match_prob, gap_prob, gap_extension_prob):
-    N, M = len(sequences), len(template)
 
-    score_matrix = np.zeros((N + 1, M + 1), dtype=float)
-    direction_matrix = np.zeros((N + 1, M + 1), dtype=int)
+def align_sequences(seqs, T):
+    m, n = len(T), len(seqs[0])
+    score_matrix = [[0] * (n + 1) for _ in range(m + 1)]
+    direction_matrix = [[''] * (n + 1) for _ in range(m + 1)]
 
-    for i in range(1, N + 1):
-        score_matrix[i, 0] = score_matrix[i - 1, 0] + gap_prob
+    gap_penalty = -3
+    # Initialize the first column of score_matrix and direction_matrix
+    for i in range(1, m + 1):
+        score_matrix[i][0] = round(score_matrix[i - 1][0] + gap_penalty, 3)
+        direction_matrix[i][0] = '↑'
 
-    for j in range(1, M + 1):
-        score_matrix[0, j] = score_matrix[0, j - 1] + gap_prob
+    # Initialize the first row of score_matrix and direction_matrix
+    for j in range(1, n + 1):
+        score_matrix[0][j] = round(score_matrix[0][j - 1] + gap_penalty, 3)
+        direction_matrix[0][j] = '←'
 
-    for i in range(1, N + 1):
-        for j in range(1, M + 1):
-            prob_match = profile_matrix[template[j - 1]][j - 1] * profile_matrix[sequences[i - 1][j - 1]][j - 1]
-            prob_gap_up = gap_prob * gap_extension_prob
-            prob_gap_left = gap_prob * gap_extension_prob
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
 
-            match = score_matrix[i - 1, j - 1] + prob_match * match_prob
-            gap_up = score_matrix[i - 1, j] + prob_gap_up
-            gap_left = score_matrix[i, j - 1] + prob_gap_left
+            delete = round(score_matrix[i - 1][j] + calculate_score('-', j - 1), 3)
+            insert = round(score_matrix[i][j - 1] + calculate_score('-', j - 1), 3)
 
-            score_matrix[i, j] = max(match, gap_up, gap_left)
+            match = round(score_matrix[i - 1][j - 1] + calculate_score(T[i - 1], j - 1), 3)
 
-            if score_matrix[i, j] == match:
-                direction_matrix[i, j] = 1  # Diagonal
-            elif score_matrix[i, j] == gap_up:
-                direction_matrix[i, j] = 2  # Up
-            else:
-                direction_matrix[i, j] = 3  # Left
+            max_score = max(match, delete, insert)
 
-    aligned_sequences = []
-    i, j = N, M
+            score_matrix[i][j] = max_score
+            if max_score == match:
+                direction_matrix[i][j] += '↖'
+            if max_score == delete:
+                direction_matrix[i][j] += '↑'
+            if max_score == insert:
+                direction_matrix[i][j] += '←'
 
-    while i > 0 or j > 0:
-        if direction_matrix[i, j] == 1:  # Diagonal
-            aligned_sequences.append(sequences[i - 1])
-            i -= 1
-            j -= 1
-        elif direction_matrix[i, j] == 2:  # Up
-            aligned_sequences.append('-' * M)
-            i -= 1
-        else:  # Left
-            aligned_sequences.append(template)
-            j -= 1
+    print("Score Matrix:")
+    for row in score_matrix:
+        print([round(val, 3) for val in row])
+    print("\nDirection Matrix:")
+    for row in direction_matrix:
+        print(row)
 
-    aligned_sequences.reverse()
+    all_alignments = []
 
-    return aligned_sequences
+    def backtrack(i, j, seq_align):
+        nonlocal all_alignments
 
-# Example usage:
-template_sequence = 'ACG'
-aligned_sequences_input = ['AC-GT', 'AC-GT', 'GCCAT']
+        if i == 0 and j == 0:
+            all_alignments.append(seq_align[::-1])
+            return
 
-# Probabilities
-match_prob = 2
-gap_prob = -3
-gap_extension_prob = -1
+        if '↖' in direction_matrix[i][j]:
+            backtrack(i - 1, j - 1, seq_align + T[i - 1])
+        if '↑' in direction_matrix[i][j]:
+            backtrack(i - 1, j, seq_align + '-')
+        if '←' in direction_matrix[i][j]:
+            backtrack(i, j - 1, seq_align + '-')
 
-profile_matrix = build_profile_matrix(aligned_sequences_input)
-aligned_sequences_output = align_sequences_with_profile(template_sequence, profile_matrix, aligned_sequences_input, match_prob, gap_prob, gap_extension_prob)
+    backtrack(m, n, '')
 
-print("Aligned Sequences with Profile:")
-for seq in aligned_sequences_output:
-    print(seq)
+    return all_alignments, score_matrix[m][n]
 
-dynamic_programming_aligned_sequences = dynamic_programming_alignment(template_sequence, profile_matrix, aligned_sequences_input, match_prob, gap_prob, gap_extension_prob)
 
-print("\nAligned Sequences using Dynamic Programming:")
-for seq in dynamic_programming_aligned_sequences:
-    print(seq)
+
+aligned_sequences = ["AC-GT", "AC-GT", "GCCAT"]
+T = "ACG"
+# ------------ [ Profile Matrix ] ------------
+
+print("Profile Matrix:")
+profile_matrix = generate_profile_matrix(aligned_sequences)
+# Print the profile matrix
+for nucleotide, frequencies in profile_matrix.items():
+    print(f"{nucleotide}: {frequencies}")
+
+# ------------ [ Align Sequences ] ------------
+aligned_result, s = align_sequences(aligned_sequences, T)
+print("Aligned Result:")
+for r in aligned_sequences:
+    print(r)
+print(aligned_result[0])
+print("Alignment Score:", s)
+
