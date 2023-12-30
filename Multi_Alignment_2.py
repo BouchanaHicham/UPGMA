@@ -140,3 +140,4 @@ for r in aligned_sequences:
 print(aligned_result[0])
 print("Alignment Score:", s)
 
+# Double check
