@@ -141,3 +141,4 @@ print(aligned_result[0])
 print("Alignment Score:", s)
 
 # Double check
+# I really need to work on this man ...
