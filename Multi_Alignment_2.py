@@ -31,12 +31,12 @@ def is_transition(nucleotide1, nucleotide2):
 # ------------------------------------ [ Score Matrix ] ------------------------------------
 
 def calculate_score(nucleotide_j, position):
-    MNuc = 2
-    MGap = 1
-    MMs = 1
-    MMv = -1
-    gap_penalty = -3
-    score = 0
+    MNuc = 2            # Weight for matching nucleotides
+    MGap = 1            # Weight for introducing a gap in the alignment ( Both (-) )
+    MMs = 1             # Weight for a mismatch involving a transition (e.g., A <-> G, C <-> T)
+    MMv = -1            # Weight for a mismatch involving a transversion (e.g., A <-> C, G <-> T)
+    gap_penalty = -3    # Penalty for introducing a gap in the alignment ( Only one (-) )
+    score = 0           # Initialize the overall alignment score
 
     for nucleotide, frequencies in profile_matrix.items():
         if nucleotide == nucleotide_j:
@@ -60,11 +60,16 @@ def calculate_score(nucleotide_j, position):
 
 
 def align_sequences(seqs, T):
+    # Get the lengths of the target sequence and the aligned sequences
     m, n = len(T), len(seqs[0])
+
+    # Initialize the score matrix and direction matrix with zeros and empty strings
     score_matrix = [[0] * (n + 1) for _ in range(m + 1)]
     direction_matrix = [[''] * (n + 1) for _ in range(m + 1)]
 
+    # Set the gap penalty
     gap_penalty = -3
+
     # Initialize the first column of score_matrix and direction_matrix
     for i in range(1, m + 1):
         score_matrix[i][0] = round(score_matrix[i - 1][0] + gap_penalty, 3)
@@ -75,17 +80,18 @@ def align_sequences(seqs, T):
         score_matrix[0][j] = round(score_matrix[0][j - 1] + gap_penalty, 3)
         direction_matrix[0][j] = '←'
 
+    # Fill in the rest of the matrices using dynamic programming
     for i in range(1, m + 1):
         for j in range(1, n + 1):
-
+            # Calculate scores for deletion, insertion, and matching
             delete = round(score_matrix[i - 1][j] + calculate_score('-', j - 1), 3)
             insert = round(score_matrix[i][j - 1] + calculate_score('-', j - 1), 3)
-
             match = round(score_matrix[i - 1][j - 1] + calculate_score(T[i - 1], j - 1), 3)
 
+            # Determine the maximum score and update the matrices accordingly
             max_score = max(match, delete, insert)
-
             score_matrix[i][j] = max_score
+
             if max_score == match:
                 direction_matrix[i][j] += '↖'
             if max_score == delete:
@@ -93,22 +99,28 @@ def align_sequences(seqs, T):
             if max_score == insert:
                 direction_matrix[i][j] += '←'
 
+    # Print the matrices for visualization
     print("Score Matrix:")
     for row in score_matrix:
         print([round(val, 3) for val in row])
+
     print("\nDirection Matrix:")
     for row in direction_matrix:
         print(row)
 
+    # Store all possible alignments and their scores
     all_alignments = []
 
+    # Define a recursive function to backtrack and find alignments
     def backtrack(i, j, seq_align):
         nonlocal all_alignments
 
+        # If reached the top-left corner, append the reversed aligned sequence to the list
         if i == 0 and j == 0:
             all_alignments.append(seq_align[::-1])
             return
 
+        # Recursively explore possible directions in the direction matrix
         if '↖' in direction_matrix[i][j]:
             backtrack(i - 1, j - 1, seq_align + T[i - 1])
         if '↑' in direction_matrix[i][j]:
@@ -116,9 +128,12 @@ def align_sequences(seqs, T):
         if '←' in direction_matrix[i][j]:
             backtrack(i, j - 1, seq_align + '-')
 
+    # Start the backtracking process from the bottom-right corner
     backtrack(m, n, '')
 
+    # Return the list of alignments and the score of the optimal alignment
     return all_alignments, score_matrix[m][n]
+
 
 
 
