@@ -1,6 +1,7 @@
 # ----------------------------------- [ Profile Matrix ] ------------------------------------
 
 def Profile_Matrix(sequences):
+    # Check if the input list of sequences is empty
     if not sequences:
         print("Sequences Are Empty Fam")
 
@@ -9,15 +10,19 @@ def Profile_Matrix(sequences):
     if not all(len(seq) == seq_length for seq in sequences):
         print("Sequences Do Not Have The Same Length so they are not aligned")
 
-    # Initialize profile matrix with zeros
+    # Initialize profile matrix with zeros for each nucleotide
     profile_matrix = {nucleotide: [0] * seq_length for nucleotide in "ACGT-"}
 
     # Update profile matrix based on aligned sequences
     for i in range(seq_length):
+        # Extract the column at the current position from all sequences
         column = [seq[i] for seq in sequences]
         for nucleotide in "ACGT-":
-            frequency = column.count(nucleotide) / len(column)  # 1/3 for example
-            profile_matrix[nucleotide][i] = round(frequency, 2)  # Round to 2 decimal place
+            # Calculate the frequency of the current nucleotide in the column
+            # .count the occurrences of a specific element within a list
+            frequency = column.count(nucleotide) / len(column)  # 1/3 for example 
+            # Update the profile matrix with the calculated frequency (rounded to 2 decimal places)
+            profile_matrix[nucleotide][i] = round(frequency, 2)
 
     return profile_matrix
 
@@ -39,21 +44,24 @@ def calculate_score(nucleotide_j, position):
     score = 0           # Initialize the overall alignment score
 
     for nucleotide, frequencies in profile_matrix.items():
+
         if nucleotide == nucleotide_j:
             # Set the weight based on the nucleotide type
             if nucleotide_j == '-':
                 weight = MGap
             else:
                 weight = MNuc
+
         elif nucleotide == '-' or nucleotide_j == '-':
             weight = gap_penalty
         elif is_transition(nucleotide, nucleotide_j):
             weight = MMs
         else:
             weight = MMv
+        # ------------------------------------------------------------------   
         # Calculate the score for the current nucleotide and position
-        score += frequencies[position] * weight
-
+        score += frequencies[position] * weight #   SCORE
+        # ------------------------------------------------------------------
     return score
 
 # ------------------------------------ [ Align Sequences ] ------------------------------------
@@ -84,9 +92,9 @@ def align_sequences(seqs, T):
     for i in range(1, m + 1):
         for j in range(1, n + 1):
             # Calculate scores for deletion, insertion, and matching
-            delete = round(score_matrix[i - 1][j] + calculate_score('-', j - 1), 3)
-            insert = round(score_matrix[i][j - 1] + calculate_score('-', j - 1), 3)
-            match = round(score_matrix[i - 1][j - 1] + calculate_score(T[i - 1], j - 1), 3)
+            delete = round(score_matrix[i - 1][j] + calculate_score('-', j - 1), 3) #↑ 
+            insert = round(score_matrix[i][j - 1] + calculate_score('-', j - 1), 3) #←
+            match = round(score_matrix[i - 1][j - 1] + calculate_score(T[i - 1], j - 1), 3) #↖
 
             # Determine the maximum score and update the matrices accordingly
             max_score = max(match, delete, insert)
@@ -110,14 +118,14 @@ def align_sequences(seqs, T):
 
     # Store all possible alignments and their scores
     all_alignments = []
-
+ 
     # Define a recursive function to backtrack and find alignments
     def backtrack(i, j, seq_align):
-        nonlocal all_alignments
+        #nonlocal all_alignments 
 
         # If reached the top-left corner, append the reversed aligned sequence to the list
         if i == 0 and j == 0:
-            all_alignments.append(seq_align[::-1])
+            all_alignments.append(seq_align[::-1]) # seq_align[::-1] reverse a sequence
             return
 
         # Recursively explore possible directions in the direction matrix
@@ -137,8 +145,10 @@ def align_sequences(seqs, T):
 
 
 
-aligned_sequences = ["AC-GT", "AC-GT", "GCCAT"]
-T = "ACG"
+aligned_sequences = ["AC-GT", 
+                     "AC-GT",
+                     "GCCAT"]
+T = "ACG"  # Target
 # ------------ [ Profile Matrix ] ------------
 
 print("Profile Matrix:")

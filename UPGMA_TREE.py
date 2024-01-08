@@ -45,6 +45,8 @@ def update_distance_matrix(matrix, cluster_i, cluster_j, labels):
     # Set the diagonal element of the new cluster to 0
     matrix[cluster_i][cluster_i] = 0
 
+    #print("updating \n",matrix) 
+
     # Remove the row and column corresponding to cluster j
     matrix = np.delete(matrix, cluster_j, axis=0) #  removes the row at index cluster_j. axis=0 argument specifies the operation along the rows.
     matrix = np.delete(matrix, cluster_j, axis=1) #  removes the column at index cluster_j. axis=1 argument specifies the operation along the columns.
@@ -121,6 +123,10 @@ def upgma(distance_matrix):
         print("New Labels",labels)
         print("Distance Matrix:")
         print(distance_matrix)
+        '''
+        for i in range(len(distance_matrix)):
+            print(" ".join(str(round(distance_matrix[i][j], 2)) if j >= i else ' ' for j in range(len(distance_matrix[i]))))
+        '''
         print("--------------------------------")
         print()
     Head.print_tree()
@@ -132,6 +138,14 @@ distance_matrix = np.array([[0.0, 5.0, 2.0, 8.0],
                             [2.0, 5.0, 0.0, 8.0],
                             [8.0, 7.0, 8.0, 0.0]])
 
+'''
+distance_matrix = np.array(
+    [[0, 17, 21, 27],
+    [17, 0, 12, 18],
+    [21, 12, 0, 14],
+    [27, 18, 14, 0]])
+
+'''
 
 '''
 # Test Distanec Matrix
